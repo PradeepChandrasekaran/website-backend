@@ -202,6 +202,42 @@ app.post("/validate-secret", async (req, res) => {
 });
 
 
+
+
+// ─── COUNTDOWN: Save target date ──────────────────────────
+// Saves IST datetime string to settings collection
+app.post("/countdown/set", async (req, res) => {
+  try {
+    const { targetISO } = req.body;
+    if (!targetISO) {
+      return res.status(400).json({ success: false, message: "targetISO is required" });
+    }
+    await db.collection("settings").updateOne(
+      { key: "countdownTarget" },
+      { $set: { key: "countdownTarget", value: targetISO, updatedAt: new Date() } },
+      { upsert: true }
+    );
+    return res.status(200).json({ success: true, message: "Countdown target saved", targetISO });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// ─── COUNTDOWN: Get current target date ──────────────────
+app.post("/countdown/get", async (req, res) => {
+  try {
+    const doc = await db.collection("settings").findOne({ key: "countdownTarget" });
+    if (!doc) {
+      return res.status(200).json({ success: true, targetISO: null });
+    }
+    return res.status(200).json({ success: true, targetISO: doc.value });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
 // Start server
 app.listen(3000, () => {
   console.log("Server running on port 3000");
